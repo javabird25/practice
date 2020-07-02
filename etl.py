@@ -186,7 +186,7 @@ def execute_sqlite_query(cursor):
             )
         ) AS actors_ids,
 
-        CASE WHEN LENGTH(m.writer) == 0 THEN m.writers ELSE m.writer END AS writers_ids
+        CASE WHEN LENGTH(TRIM(m.writer)) == 0 THEN m.writers ELSE m.writer END AS writers_ids
     FROM movies m
     """)
 
@@ -218,6 +218,8 @@ def convert_row_to_document(db, row):
 
     if doc["imdb_rating"] == "N/A":
         doc["imdb_rating"] = None
+    else:
+        doc["imdb_rating"] = float(doc["imdb_rating"])
     doc["actors"] = get_actors(db, row)
     writers = doc["writers"] = get_writers(db, row)
     doc["writers_names"] = ", ".join([writer["name"] for writer in writers])
@@ -246,7 +248,7 @@ def get_actors(db, row):
     actors = []
     for id_ in row["actors_ids"].split(","):
         actors.append({
-            "id": id_,
+            "id": int(id_),
             "name": get_actor_name(db, id_),
         })
     return actors
@@ -266,12 +268,13 @@ def get_writers(db, row):
         return writers
 
     # Несколько сценаристов в JSON-объекте
-    writers_ids = [writer["id"] for writer in json.loads(writers_ids)]
+    writers_ids = list(dict.fromkeys([writer["id"] for writer in json.loads(writers_ids)]))
     for id_ in writers_ids:
         writers.append({
             "id": id_,
             "name": get_writer_name(db, id_)
         })
-        return writers
+    return writers
+
 
 main()
