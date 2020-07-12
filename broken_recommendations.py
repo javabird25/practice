@@ -16,6 +16,9 @@ class Matrix:
         return self.matrix.pop()
 
     def __str__(self):
+        if not self.matrix:
+            return "None"
+
         string = ""
         # Минимальный размер измерения квадратной матрицы без учета пустых строк
         dim_size = ceil(sqrt(len(self.matrix)))
