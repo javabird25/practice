@@ -157,24 +157,6 @@ def execute_sqlite_query(cursor):
         m.plot AS description,
         m.director,
 
-        -- Склейка имен актеров через запятую
-        (
-            SELECT GROUP_CONCAT(name, ', ')
-            FROM (
-                -- Результат этого подзапроса - список имен актеров,
-                -- снявшихся в текущем обрабатываемом фильме.
-                SELECT a.name
-                FROM actors a
-                WHERE a.id IN (
-                    -- Результат этого подзапроса - список id актеров,
-                    -- снявшихся в текущем обрабатываемом фильме.
-                    SELECT ma.actor_id
-                    FROM movie_actors ma
-                    WHERE ma.movie_id = m.id
-                )
-            )
-        ) AS actors_names,
-
         (
             SELECT GROUP_CONCAT(actor_id)
             FROM (
@@ -199,6 +181,8 @@ def document_generator(cursor):
     """
     while row := cursor.fetchone():
         doc = convert_row_to_document(cursor.connection, row)
+        if not doc:
+            continue
         yield doc
 
 
@@ -220,11 +204,26 @@ def convert_row_to_document(db, row):
         doc["imdb_rating"] = None
     else:
         doc["imdb_rating"] = float(doc["imdb_rating"])
+
     doc["actors"] = get_actors(db, row)
-    writers = doc["writers"] = get_writers(db, row)
-    doc["writers_names"] = ", ".join([writer["name"] for writer in writers])
+    doc["writers"] = get_writers(db, row)
+
+    filter_na_fields(doc)
+
+    doc["actors_names"] = [", ".join([actor["name"] for actor in doc["actors"]])]
+    doc["writers_names"] = [", ".join([writer["name"] for writer in doc["writers"]])]
 
     return doc
+
+
+def filter_na_fields(doc):
+    doc["actors"] = [a for a in doc["actors"] if a["name"] != "N/A"]
+    doc["writers"] = [a for a in doc["writers"] if a["name"] != "N/A"]
+
+    if doc["description"] == "N/A":
+        doc["description"] = None
+    if doc["director"] == "N/A":
+        doc["director"] = None
 
 
 def get_person_name(table, db, writer_id):
