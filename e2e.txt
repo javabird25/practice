@@ -1,0 +1,14 @@
+# 389 результатов одной страницей
+GET http://127.0.0.1:8000/api/movies?search=Star&limit=500
+
+# 2 страница со 100 результатами
+GET http://127.0.0.1:8000/api/movies?search=Star&limit=100&page=2
+
+# 11 фильмов
+GET http://127.0.0.1:8000/api/movies?search=Angel
+
+# 1 фильм
+GET http://127.0.0.1:8000/api/movies?search=Camp
+
+# 0 фильмов
+GET http://127.0.0.1:8000/api/movies?search=efjefnej
